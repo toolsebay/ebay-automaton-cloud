@@ -70,11 +70,11 @@ EBAY_CLIENT_ID = st.secrets.get("EBAY_CLIENT_ID", os.getenv("EBAY_CLIENT_ID", "N
 EBAY_CLIENT_SECRET = st.secrets.get("EBAY_CLIENT_SECRET", os.getenv("EBAY_CLIENT_SECRET", ""))
 EBAY_RUNAME = st.secrets.get("EBAY_RUNAME", os.getenv("EBAY_RUNAME", ""))
 
-SMTP_EMAIL = st.secrets.get("SMTP_EMAIL", os.getenv("SMTP_EMAIL", ""))
+SMTP_EMAIL = st.secrets.get("SMTP_EMAIL", os.getenv("SMTP_EMAIL", "ebayautomationtool@gmail.com"))
 SMTP_PASSWORD = st.secrets.get("SMTP_PASSWORD", os.getenv("SMTP_PASSWORD", ""))
 
-WHATSAPP_NUMBER = st.secrets.get("WHATSAPP_NUMBER", os.getenv("WHATSAPP_NUMBER", ""))
-WHATSAPP_DEFAULT_MSG = "Hello, I need help with the eBay Automation Dashboard."
+WHATSAPP_NUMBER = st.secrets.get("WHATSAPP_NUMBER", os.getenv("WHATSAPP_NUMBER", "923011234527"))
+WHATSAPP_DEFAULT_MSG = "Hello Nawaz, I need help with the eBay Automation Dashboard."
 WHATSAPP_LINK = (
     f"https://wa.me/{WHATSAPP_NUMBER}?text={urllib.parse.quote(WHATSAPP_DEFAULT_MSG)}"
     if WHATSAPP_NUMBER
@@ -141,84 +141,77 @@ def inject_css() -> None:
 
 inject_css()
 
+if WHATSAPP_LINK:
+    whatsapp_html_snippet = (
+        f'['
+        '
 
-# ============================================================
-# GENERIC HELPERS
-# ============================================================
 
+'
+'Need Help? Chat with us'
+']({WHATSAPP_LINK})'
+)
+st.markdown(whatsapp_html_snippet, unsafe_allow_html=True)
+
+============================================================
+GENERIC HELPERS
+============================================================
 def load_json(path: Path, default: Any) -> Any:
-    try:
-        if not path.exists():
-            return default
-        with path.open("r", encoding="utf-8") as f:
-            return json.load(f)
-    except (OSError, json.JSONDecodeError):
-        return default
-
+try:
+if not path.exists():
+return default
+with path.open("r", encoding="utf-8") as f:
+return json.load(f)
+except (OSError, json.JSONDecodeError):
+return default
 
 def save_json(path: Path, data: Any) -> bool:
-    try:
-        tmp = path.with_suffix(path.suffix + ".tmp")
-        with tmp.open("w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False, default=str)
-        tmp.replace(path)
-        return True
-    except OSError:
-        return False
-
+try:
+tmp = path.with_suffix(path.suffix + ".tmp")
+with tmp.open("w", encoding="utf-8") as f:
+json.dump(data, f, indent=2, ensure_ascii=False, default=str)
+tmp.replace(path)
+return True
+except OSError:
+return False
 
 def hash_pass(password: str) -> str:
-    return hashlib.sha256(password.encode("utf-8")).hexdigest()
-
+return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
 def normalize_username(value: str) -> str:
-    return (value or "").strip().lower()
-
+return (value or "").strip().lower()
 
 def valid_password(password: str) -> bool:
-    return len(password or "") >= 8
-
+return len(password or "") >= 8
 
 def safe_int(value: Any, default: int = 0) -> int:
-    try:
-        return int(value)
-    except (ValueError, TypeError):
-        return default
-
+try:
+return int(value)
+except (ValueError, TypeError):
+return default
 
 def safe_float(value: Any, default: float = 0.0) -> float:
-    try:
-        return float(value)
-    except (ValueError, TypeError):
-        return default
-
+try:
+return float(value)
+except (ValueError, TypeError):
+return default
 
 def money(value: Any, currency: str = "USD") -> str:
-    amount = safe_float(value)
-    symbol = {"USD": "\(", "GBP": "£", "EUR": "€", "AUD": "A\)"}.get(currency, currency + " ")
-    return f"{symbol}{amount:,.2f}"
-
+amount = safe_float(value)
+symbol = {"USD": "$", "GBP": "£", "EUR": "€", "AUD": "A$"}.get(currency, currency + " ")
+return f"{symbol}{amount:,.2f}"
 
 def page_header(title: str, subtitle: str = "", eyebrow: str = "eBay Automation") -> None:
-    st.markdown(
-        f"""
-
-
-
-
-
+st.markdown(
+f"""
 
 {eyebrow}
 
-
 {title}
-
 
 {subtitle}
 
-
-
-    """,
+   """,
     unsafe_allow_html=True,
 )
 
@@ -227,19 +220,13 @@ def metric_card(label: str, value: str, help_text: str = "") -> None:
 st.markdown(
 f"""
 
-
-
 {label}
-
 
 {value}
 
-
 {help_text}
 
-
-
-    """,
+   """,
     unsafe_allow_html=True,
 )
 
@@ -248,25 +235,20 @@ def panel_start(title: str, subtitle: str = "") -> None:
 st.markdown(
 f"""
 
-
-
 {title}
-
 
 {subtitle}
 
-
-
-
-    """,
+   """,
     unsafe_allow_html=True,
 )
 
 
-
 def panel_end() -> None:
 st.markdown("
+
 ", unsafe_allow_html=True)
+
 def dataframe_download(df: pd.DataFrame, filename: str, label: str = "Export CSV") -> None:
 csv_bytes = df.to_csv(index=False).encode("utf-8")
 st.download_button(
@@ -275,38 +257,40 @@ data=csv_bytes,
 file_name=filename,
 mime="text/csv",
 )
+
 ============================================================
 USER / AUTH
 ============================================================
 def load_users() -> Dict[str, Any]:
 users = load_json(FILES["users"], {})
 return users if isinstance(users, dict) else {}
+
 def save_users(users: Dict[str, Any]) -> None:
 save_json(FILES["users"], users)
+
 def ensure_admin() -> None:
 users = load_users()
 if "admin" not in users:
 users["admin"] = {
-"password": hash_pass("change-me"),
+"password": hash_pass("admin123"),
 "role": "admin",
-"email": "",
+"email": SMTP_EMAIL,
 "enabled": True,
 "modules": ALL_MODULES.copy(),
 "created_at": dt.datetime.now().isoformat(timespec="seconds"),
 }
 save_users(users)
+
 def send_otp_email(recipient: str, otp: str) -> Tuple[bool, str]:
 if not SMTP_EMAIL or not SMTP_PASSWORD:
 return False, "SMTP credentials are not configured."
-
-
 
 try:
     msg = EmailMessage()
     msg["Subject"] = "eBay Automation Cloud Verification Code"
     msg["From"] = SMTP_EMAIL
     msg["To"] = recipient
-    msg.set_content(f"Your verification code is: {otp}\n\nThis code expires shortly.")
+    msg.set_content(f"Your verification code is: {otp}\n\nThis code expires in 10 minutes.")
 
     with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=20) as server:
         server.login(SMTP_EMAIL, SMTP_PASSWORD)
